@@ -99,13 +99,13 @@ async function submitUserMessage(content: string) {
     {
         id: 1,
         start: '2024-05-20T09:00:00',
-        end: '2024-05-20T9:30:00',
+        end: '2024-05-20T10:00:00',
         title: 'Dr. Smith'
     },
     {
         id: 2,
-        start: '2024-05-20T10:00:00',
-        end: '2024-05-20T11:00:00',
+        start: '2024-05-20T11:00:00',
+        end: '2024-05-20T12:00:00',
         title: 'Dr. Jones'
     },
     {

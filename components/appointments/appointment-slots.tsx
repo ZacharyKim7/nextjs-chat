@@ -89,15 +89,15 @@ export function AppointmentSlots({ props: appointmentSlots }: { props: Appointme
                 <FullCalendar
                     plugins={[timeGridPlugin]}
                     initialView="timeGridWeek"
-                    events = {[
+                    events = {
                         // {   title: , 
                         //     start: '2024-05-20T09:00:00'
                         //     // durationMinutes: 30,
                         //     // doctor: 'Dr. Smith'
                         // },
                         // { title: 'event 2', date: '2024-05-20' }
-                        appointmentSlots.map(slot => ({id: slot.id.toString(), startStr: slot.start, endStr: slot.end, title: slot.title}))
-                    ]}
+                        appointmentSlots.map(slot => ({title: slot.title, start: slot.start, end: slot.end, id: slot.id.toString()}))
+                    }
                 />
             )}
         </div>
