@@ -22,6 +22,7 @@ import { Chat, Message } from '@/lib/types'
 import { auth } from '@/auth'
 import { AppointmentSlots } from '@/components/appointments/appointment-slots'
 import { spinner } from '@/components/appointments'
+import { Title } from '@radix-ui/react-dialog'
 
 async function confirmAppointment(appointmentSlot: {id: number, time: string, durationMinutes: number, doctor: string}) {
   'use server'
@@ -94,6 +95,33 @@ async function submitUserMessage(content: string) {
 
   const aiState = getMutableAIState<typeof AI>()
 
+  const mockAppointmentSlots = [
+    {
+        id: 1,
+        start: '2024-05-20T09:00:00',
+        end: '2024-05-20T9:30:00',
+        title: 'Dr. Smith'
+    },
+    {
+        id: 2,
+        start: '2024-05-20T10:00:00',
+        end: '2024-05-20T11:00:00',
+        title: 'Dr. Jones'
+    },
+    {
+        id: 3,
+        start: '2024-05-21T11:00:00',
+        end: '2024-05-21T12:00:00',
+        title: 'Dr. Taylor'
+    },
+    {
+        id: 4,
+        start: '2024-05-22T13:00:00',
+        end: '2024-05-22T14:00:00',
+        title: 'Dr. Lee'
+    }
+]
+
   aiState.update({
     ...aiState.get(),
     messages: [
@@ -162,11 +190,11 @@ async function submitUserMessage(content: string) {
           appointmentSlots: z.array(
             z.object({
               id: z.number().describe('A unique ID for this appointment'),
-              time: z
-                .string()
-                .describe('The date and time of the event, in ISO-8601 format'),
-              durationMinutes: z.number().describe('The time in minutes of the appointment'),
-              doctor: z.string().describe('The doctor available for this slot')
+                // time: z
+                //   .string()
+                //   .describe('The date and time of the event, in ISO-8601 format'),
+                // durationMinutes: z.number().describe('The time in minutes of the appointment'),
+                // doctor: z.string().describe('The doctor available for this slot')
             })
           )
         }),
@@ -194,7 +222,7 @@ async function submitUserMessage(content: string) {
                     type: 'tool-call',
                     toolName: 'listAppointmentSlots',
                     toolCallId,
-                    args: { appointmentSlots }
+                    args: { mockAppointmentSlots }
                   }
                 ]
               },
@@ -206,7 +234,7 @@ async function submitUserMessage(content: string) {
                     type: 'tool-result',
                     toolName: 'listAppointmentSlots',
                     toolCallId,
-                    result: appointmentSlots
+                    result: mockAppointmentSlots
                   }
                 ]
               }
@@ -215,7 +243,7 @@ async function submitUserMessage(content: string) {
 
           return (
             <BotCard>
-              <AppointmentSlots props={appointmentSlots} />
+              <AppointmentSlots props={mockAppointmentSlots} />
             </BotCard>
           )
         }
@@ -301,6 +329,9 @@ export const getUIStateFromAIState = (aiState: Chat) => {
       display:
         message.role === 'tool' ? (
           message.content.map(tool => {
+            if(tool.toolName === 'listAppointmentSlots') {
+              console.log('tool data', tool.result);  
+            }
             return tool.toolName === 'listAppointmentSlots' ? (
               <BotCard>
                 {/* TODO: Infer types based on the tool result*/}
