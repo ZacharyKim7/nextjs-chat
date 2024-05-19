@@ -2,49 +2,74 @@ import { Separator } from '@/components/ui/separator'
 import { UIState } from '@/lib/chat/actions'
 import { Session } from '@/lib/types'
 import Link from 'next/link'
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
+// import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
+import { useState } from 'react'
 
 export interface ChatList {
   messages: UIState
   session?: Session
   isShared: boolean
 }
+type MedicalObject = {
+  numberOfResults: number
+  codes: Array<string>
+  extraCodes: Array<string> | null
+  dfCodes: Array<string>
+  dfSystemCodes?: Array<string>
+
+}
 
 export function ChatList({ messages, session, isShared }: ChatList) {
+  const [apiData, setApiData] = useState<MedicalObject[]>([])
+  const [terms, setTerms] = useState('')
+  const fetch = require('node-fetch');
+
+
   if (!messages.length) {
     return null
   }
 
+  function getApiData() {
+    const url = `https://clinicaltables.nlm.nih.gov/api/conditions/v3/search?terms=${terms}&df=condition_name&maxList=10&sf=term_type&ef=umls_cui&knowledgeResponseType=application/json`;
+
+    fetch(url)
+      .then((response: any) => response.json())
+      .then((data: MedicalObject[]) => setApiData(data))
+      .catch((err: any) => console.error('error:' + err));
+  }
+
   return (
-    <div className="relative mx-auto max-w-2xl px-4">
-      {!isShared && !session ? (
-        <>
-          <div className="group relative mb-4 flex items-start md:-ml-12">
-            <div className="bg-background flex size-[25px] shrink-0 select-none items-center justify-center rounded-md border shadow-sm">
-              <ExclamationTriangleIcon />
-            </div>
-            <div className="ml-4 flex-1 space-y-2 overflow-hidden px-1">
-              <p className="text-muted-foreground leading-normal">
-                Please{' '}
-                <Link href="/login" className="underline">
-                  log in
-                </Link>{' '}
-                or{' '}
-                <Link href="/signup" className="underline">
-                  sign up
-                </Link>{' '}
-                to save and revisit your chat history!
-              </p>
-            </div>
-          </div>
-          <Separator className="my-4" />
-        </>
-      ) : null}
+    <div className="relative mx-auto max-w-3.5xl px-4">
+      <form>
+        <input
+          type="text"
+          value={terms}
+          onChange={(e) => setTerms(e.target.value)}
+          placeholder="Search for medical conditions"
+          className="w-full p-2 border border-gray-300 rounded-md"
+        />
+        <button
+          type="button"
+          onClick={getApiData}
+          className="mt-2 p-2 bg-blue-500 text-white rounded-md"
+        >
+          Search
+        </button>
+      </form>
 
       {messages.map((message, index) => (
         <div key={message.id}>
           {message.display}
           {index < messages.length - 1 && <Separator className="my-4" />}
+        </div>
+      ))}
+
+      {apiData.map((message, index) => (
+        <div key={index}>
+          {
+            message.dfCodes.map((code, codeIndex) => (
+              <div key={codeIndex}>{code}</div>))
+          }
         </div>
       ))}
     </div>

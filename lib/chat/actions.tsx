@@ -22,17 +22,18 @@ import { Chat, Message } from '@/lib/types'
 import { auth } from '@/auth'
 import { AppointmentSlots } from '@/components/appointments/appointment-slots'
 import { spinner } from '@/components/appointments'
+import { Symptoms } from '@/components/symptoms'
 
-async function confirmAppointment(appointmentSlot: {id: number, time: string, durationMinutes: number, doctor: string}) {
+async function confirmAppointment(appointmentSlot: { id: number, time: string, durationMinutes: number, doctor: string }) {
   'use server'
-  const {id, time, durationMinutes, doctor} = appointmentSlot;
+  const { id, time, durationMinutes, doctor } = appointmentSlot;
   const aiState = getMutableAIState<typeof AI>()
 
   const selecting = createStreamableUI(
     <div className="inline-flex items-start gap-1 md:items-center">
       {spinner}
       <p className="mb-2">
-      Selecting appointment {id} ...
+        Selecting appointment {id} ...
       </p>
     </div>
   )
@@ -46,7 +47,7 @@ async function confirmAppointment(appointmentSlot: {id: number, time: string, du
       <div className="inline-flex items-start gap-1 md:items-center">
         {spinner}
         <p className="mb-2">
-        Selecting appointment {id} ... working on it...
+          Selecting appointment {id} ... working on it...
         </p>
       </div>
     )
@@ -56,7 +57,7 @@ async function confirmAppointment(appointmentSlot: {id: number, time: string, du
     selecting.done(
       <div>
         <p className="mb-2">
-        You have successfully selected appointment {id}.
+          You have successfully selected appointment {id}.
         </p>
       </div>
     )
@@ -219,6 +220,69 @@ async function submitUserMessage(content: string) {
             </BotCard>
           )
         }
+      }, symptoms: {
+        description: 'List illnesses from symptoms.',
+        parameters: z.object({
+          symptoms: z.array(
+            z.object({
+              id: z.number().describe('A unique ID for this symptom'),
+              numberOfResults: z.number().describe('The number of results to return'),
+              codes: z.array(z.string()).describe('The codes for the symptom'),
+              extraCodes: z.array(z.string()).nullable().describe('Extra codes for the symptom'),
+              dfCodes: z.array(z.string()).describe('The df codes for the symptom'),
+              dfSystemCodes: z.array(z.string()).nullable().describe('The df system codes for the symptom')
+            })
+          )
+        }),
+        generate: async function* ({ symptoms }) {
+          yield (
+            <BotCard>
+              {/* <AppointmentsSkeleton /> */}
+              Temp skeleton for now
+            </BotCard>
+          )
+
+          await sleep(1000)
+
+          const toolCallId = nanoid()
+
+          aiState.done({
+            ...aiState.get(),
+            messages: [
+              ...aiState.get().messages,
+              {
+                id: nanoid(),
+                role: 'assistant',
+                content: [
+                  {
+                    type: 'tool-call',
+                    toolName: 'symptoms',
+                    toolCallId,
+                    args: { symptoms }
+                  }
+                ]
+              },
+              {
+                id: nanoid(),
+                role: 'tool',
+                content: [
+                  {
+                    type: 'tool-result',
+                    toolName: 'symptoms',
+                    toolCallId,
+                    result: symptoms
+                  }
+                ]
+              }
+            ]
+          })
+
+          return (
+            <BotCard>
+              <Symptoms props={symptoms} />
+            </BotCard>
+          )
+        }
       },
     }
   })
@@ -301,13 +365,20 @@ export const getUIStateFromAIState = (aiState: Chat) => {
       display:
         message.role === 'tool' ? (
           message.content.map(tool => {
-            return tool.toolName === 'listAppointmentSlots' ? (
-              <BotCard>
-                {/* TODO: Infer types based on the tool result*/}
-                {/* @ts-expect-error */}
-                <AppointmentSlots props={tool.result} />
-              </BotCard>
-            ) : null
+            if (tool.toolName === 'listAppointmentSlots' && tool.result) {
+              return (
+                <BotCard>
+                  <AppointmentSlots props={tool.result} />
+                </BotCard>
+              )
+            }
+            if (tool.toolName === 'symptoms' && tool.result) {
+              return (
+                <BotCard>
+                  <Symptoms props={tool.result} />
+                </BotCard>
+              )
+            }
           })
         ) : message.role === 'user' ? (
           <UserMessage>{message.content as string}</UserMessage>
